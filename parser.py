@@ -1,118 +1,104 @@
-import mailbox
-import re
 from email import policy
 from email.parser import BytesParser
-from email.header import decode_header
-from decoder import decode_bytes, fix_text
+import re
+
+from decoder import decode_mime_header, decode_payload, clean_text
 
 
-def decode_mime_header(value):
-    if not value:
-        return ""
+def split_raw_messages_bytes(raw: bytes):
+    # mbox形式の「From 〜」で分割
+    pattern = re.compile(rb"(?m)^From .*$")
+    matches = list(pattern.finditer(raw))
 
-    parts = decode_header(value)
-    result = ""
+    if not matches:
+        return [raw]
 
-    for part, enc in parts:
-        if isinstance(part, bytes):
-            try:
-                result += part.decode(enc or "utf-8", errors="replace")
-            except Exception:
-                result += part.decode("utf-8", errors="replace")
-        else:
-            result += part
+    messages = []
+    for i, match in enumerate(matches):
+        start = match.start()
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(raw)
+        messages.append(raw[start:end])
 
-    return fix_text(result)
+    return messages
 
 
-def get_body(message):
-    body = ""
+def get_best_body(message):
+    plain_body = ""
+    html_body = ""
 
     if message.is_multipart():
         for part in message.walk():
-            content_type = part.get_content_type()
-            disposition = part.get_content_disposition()
-
-            if disposition == "attachment":
+            if part.get_content_disposition() == "attachment":
                 continue
 
+            content_type = part.get_content_type()
+            charset = part.get_content_charset()
+
+            payload = part.get_payload(decode=True)
+            if payload is None:
+                payload = part.get_payload()
+
+            decoded = decode_payload(payload, charset)
+
             if content_type == "text/plain":
-                try:
-                    payload = part.get_payload(decode=True)
-                    if payload:
-                        charset = part.get_content_charset() or "utf-8"
-                        body += payload.decode(charset, errors="replace")
-                except Exception:
-                    pass
+                plain_body += decoded + "\n\n"
+            elif content_type == "text/html":
+                html_body += decoded + "\n\n"
     else:
-        try:
-            payload = message.get_payload(decode=True)
-            if payload:
-                charset = message.get_content_charset() or "utf-8"
-                body = payload.decode(charset, errors="replace")
-            else:
-                body = str(message.get_payload())
-        except Exception:
-            body = str(message.get_payload())
+        charset = message.get_content_charset()
+        payload = message.get_payload(decode=True)
+        if payload is None:
+            payload = message.get_payload()
+        plain_body = decode_payload(payload, charset)
 
-    return fix_text(body)
+    if plain_body.strip():
+        return clean_text(plain_body)
+
+    if html_body.strip():
+        return clean_text(html_body)
+
+    return ""
 
 
-def split_raw_messages(text):
-    # mbox形式: From xxx で始まるメールを分割
-    pattern = r"(?m)^From .*$"
-    matches = list(re.finditer(pattern, text))
+def parse_one_message(raw_message: bytes, no: int):
+    msg = BytesParser(policy=policy.default).parsebytes(raw_message)
 
-    if not matches:
-        return [text]
+    subject = decode_mime_header(msg.get("Subject", ""))
+    sender = decode_mime_header(msg.get("From", ""))
+    to = decode_mime_header(msg.get("To", ""))
+    date = decode_mime_header(msg.get("Date", ""))
+    message_id = decode_mime_header(msg.get("Message-ID", ""))
 
-    messages = []
+    body = get_best_body(msg)
 
-    for i, match in enumerate(matches):
-        start = match.start()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
-        messages.append(text[start:end])
+    if not body:
+        body = decode_payload(raw_message)
 
-    return messages
+    return {
+        "no": no,
+        "date": date,
+        "from": sender,
+        "to": to,
+        "subject": subject or f"件名なし {no}",
+        "body": body,
+        "preview": body[:300],
+        "message_id": message_id,
+    }
 
 
 def parse_mail_file(file_path):
     with open(file_path, "rb") as f:
         raw = f.read()
 
-    text = decode_bytes(raw)
-    raw_messages = split_raw_messages(text)
+    raw_messages = split_raw_messages_bytes(raw)
 
     mails = []
 
     for idx, raw_msg in enumerate(raw_messages, start=1):
         try:
-            msg = BytesParser(policy=policy.default).parsebytes(raw_msg.encode("utf-8", errors="replace"))
-
-            subject = decode_mime_header(msg.get("Subject", ""))
-            sender = decode_mime_header(msg.get("From", ""))
-            to = decode_mime_header(msg.get("To", ""))
-            date = decode_mime_header(msg.get("Date", ""))
-            message_id = decode_mime_header(msg.get("Message-ID", ""))
-
-            body = get_body(msg)
-
-            if not body:
-                body = fix_text(raw_msg)
-
-            mails.append({
-                "no": idx,
-                "date": date,
-                "from": sender,
-                "to": to,
-                "subject": subject,
-                "body": body,
-                "preview": body[:300],
-                "message_id": message_id,
-            })
-
+            mails.append(parse_one_message(raw_msg, idx))
         except Exception:
-            fixed = fix_text(raw_msg)
+            fixed = clean_text(decode_payload(raw_msg))
             mails.append({
                 "no": idx,
                 "date": "",
