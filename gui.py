@@ -2,10 +2,7 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
-from parser import parse_mail_file
-from exporter_excel import export_excel
-from exporter_html import export_html
-from exporter_txt import export_txt_files
+from services.mail_service import MailService
 
 
 def create_main_window(root):
@@ -38,8 +35,8 @@ def create_main_window(root):
             title="メールファイルを選択",
             filetypes=[
                 ("Mail/Text files", "*.txt *.mbox *.eml"),
-                ("All files", "*.*")
-            ]
+                ("All files", "*.*"),
+            ],
         )
         if path:
             input_path.set(path)
@@ -77,27 +74,20 @@ def create_main_window(root):
             return
 
         try:
-            status.config(text="メール解析中...")
+            status.config(text="変換中...")
             root.update()
-
-            mails = parse_mail_file(input_path.get())
 
             os.makedirs(output_path.get(), exist_ok=True)
 
-            if excel_var.get():
-                status.config(text="Excel作成中...")
-                root.update()
-                export_excel(mails, os.path.join(output_path.get(), "mail_index.xlsx"))
+            service = MailService()
 
-            if html_var.get():
-                status.config(text="HTML作成中...")
-                root.update()
-                export_html(mails, os.path.join(output_path.get(), "index.html"))
-
-            if txt_var.get():
-                status.config(text="本文txt保存中...")
-                root.update()
-                export_txt_files(mails, output_path.get())
+            mails = service.convert(
+                input_file=input_path.get(),
+                output_folder=output_path.get(),
+                excel=excel_var.get(),
+                html=html_var.get(),
+                txt=txt_var.get(),
+            )
 
             status.config(text=f"完了：{len(mails)}件")
             messagebox.showinfo("完了", f"{len(mails)}件のメールを変換しました。")
@@ -106,4 +96,10 @@ def create_main_window(root):
             status.config(text="エラー発生")
             messagebox.showerror("エラー", str(e))
 
-    ttk.Button(root, text="変換開始", style="Main.TButton", width=30, command=start_convert).pack(pady=8)
+    ttk.Button(
+        root,
+        text="変換開始",
+        style="Main.TButton",
+        width=30,
+        command=start_convert,
+    ).pack(pady=8)

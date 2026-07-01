@@ -27,7 +27,7 @@ def export_excel(mails, filename):
         "宛先",
         "件名",
         "本文プレビュー",
-        "Message-ID"
+        "Message-ID",
     ]
 
     for c, h in enumerate(headers, start=1):
@@ -36,13 +36,13 @@ def export_excel(mails, filename):
         cell.font = Font(bold=True)
 
     for r, mail in enumerate(mails, start=2):
-        ws.cell(r, 1).value = clean_excel(mail["no"])
-        ws.cell(r, 2).value = clean_excel(mail["date"])
-        ws.cell(r, 3).value = clean_excel(mail["from"])
-        ws.cell(r, 4).value = clean_excel(mail["to"])
-        ws.cell(r, 5).value = clean_excel(mail["subject"])
-        ws.cell(r, 6).value = clean_excel(mail["preview"], 1000)
-        ws.cell(r, 7).value = clean_excel(mail["message_id"])
+        ws.cell(r, 1).value = clean_excel(mail.no)
+        ws.cell(r, 2).value = clean_excel(mail.date)
+        ws.cell(r, 3).value = clean_excel(mail.sender)
+        ws.cell(r, 4).value = clean_excel(mail.to)
+        ws.cell(r, 5).value = clean_excel(mail.subject)
+        ws.cell(r, 6).value = clean_excel(mail.preview, 1000)
+        ws.cell(r, 7).value = clean_excel(mail.message_id)
 
         ws.cell(r, 6).alignment = Alignment(wrap_text=True, vertical="top")
 

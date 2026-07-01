@@ -12,9 +12,9 @@ except Exception:
 
 
 ENCODINGS = [
+    "iso-2022-jp",
     "utf-8",
     "utf-8-sig",
-    "iso-2022-jp",
     "cp932",
     "shift_jis",
     "euc_jp",
@@ -22,32 +22,74 @@ ENCODINGS = [
 ]
 
 
+def normalize_charset(charset):
+    if not charset:
+        return None
+
+    charset = charset.lower().replace("_", "-").strip()
+
+    alias = {
+        "iso2022jp": "iso-2022-jp",
+        "iso-2022-jp": "iso-2022-jp",
+        "shift-jis": "shift_jis",
+        "windows-31j": "cp932",
+        "sjis": "shift_jis",
+    }
+
+    return alias.get(charset, charset)
+
+
+def repair_iso2022jp_text(text: str) -> str:
+    if not text:
+        return ""
+
+    if "$B" not in text and "(B" not in text:
+        return text
+
+    try:
+        fixed = text.replace("$B", "\x1b$B").replace("(B", "\x1b(B")
+        return fixed.encode("latin1", errors="ignore").decode("iso-2022-jp", errors="replace")
+    except Exception:
+        return text
+
+
+def badness(text: str) -> int:
+    return (
+        text.count("�") * 10
+        + text.count("\x00") * 20
+        + text.count("$B") * 30
+    )
+
+
 def decode_bytes(data: bytes, charset: str | None = None) -> str:
     if data is None:
         return ""
 
+    charset = normalize_charset(charset)
+
     if charset:
         try:
-            return data.decode(charset, errors="replace")
+            return data.decode(charset)
         except Exception:
             pass
 
+    candidates = []
+
     for enc in ENCODINGS:
         try:
-            return data.decode(enc)
+            candidates.append(data.decode(enc, errors="replace"))
         except Exception:
             pass
 
     if chardet:
         try:
-            guessed = chardet.detect(data)
-            enc = guessed.get("encoding")
-            if enc:
-                return data.decode(enc, errors="replace")
+            guessed = normalize_charset(chardet.detect(data).get("encoding"))
+            if guessed:
+                candidates.append(data.decode(guessed, errors="replace"))
         except Exception:
             pass
 
-    return data.decode("utf-8", errors="replace")
+    return min(candidates, key=badness) if candidates else data.decode("utf-8", errors="replace")
 
 
 def decode_mime_header(value) -> str:
@@ -65,27 +107,22 @@ def decode_mime_header(value) -> str:
     return clean_text(result)
 
 
-def maybe_unicode_escape(text: str) -> str:
-    if not text:
-        return ""
-
-    # \u3053\u306e 形式を戻す
-    if "\\u" in text:
-        try:
-            return text.encode("utf-8").decode("unicode_escape")
-        except Exception:
-            return text
-
-    return text
-
-
 def html_to_text(text: str) -> str:
     if not text:
         return ""
 
-    if "<html" in text.lower() or "<body" in text.lower() or "<!doctype" in text.lower():
-        soup = BeautifulSoup(text, "html.parser")
-        return soup.get_text("\n")
+    lower = text.lower()
+
+    if "<html" in lower or "<body" in lower or "<!doctype" in lower:
+        try:
+            soup = BeautifulSoup(text, "html.parser")
+            return soup.get_text("\n")
+        except Exception:
+            text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+            text = re.sub(r"<script.*?</script>", "", text, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r"<style.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
+            text = re.sub(r"<[^>]+>", "\n", text)
+            return text
 
     return text
 
@@ -94,8 +131,8 @@ def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    text = maybe_unicode_escape(text)
     text = html.unescape(text)
+    text = repair_iso2022jp_text(text)
     text = html_to_text(text)
 
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -112,26 +149,24 @@ def decode_payload(payload: bytes | str | None, charset: str | None = None) -> s
     if isinstance(payload, str):
         return clean_text(payload)
 
-    # まず普通にデコード
-    text = decode_bytes(payload, charset)
+    candidates = []
 
-    # quoted-printableっぽい場合
-    if "=" in text and re.search(r"=[0-9A-Fa-f]{2}", text):
-        try:
-            qp = quopri.decodestring(payload)
-            text = decode_bytes(qp, charset)
-        except Exception:
-            pass
+    candidates.append(decode_bytes(payload, charset))
 
-    # base64っぽい場合
-    compact = re.sub(rb"\s+", b"", payload)
-    if len(compact) > 20:
-        try:
+    try:
+        qp = quopri.decodestring(payload)
+        candidates.append(decode_bytes(qp, charset))
+    except Exception:
+        pass
+
+    try:
+        compact = re.sub(rb"\s+", b"", payload)
+        if len(compact) > 20:
             b64 = base64.b64decode(compact, validate=True)
-            decoded = decode_bytes(b64, charset)
-            if len(decoded) > len(text) / 2:
-                text = decoded
-        except Exception:
-            pass
+            candidates.append(decode_bytes(b64, charset))
+    except Exception:
+        pass
 
-    return clean_text(text)
+    best = min(candidates, key=badness)
+
+    return clean_text(best)
