@@ -26,7 +26,7 @@ def export_excel(mails, filename):
         "差出人",
         "宛先",
         "件名",
-        "本文プレビュー",
+        "本文",
         "Message-ID",
     ]
 
@@ -41,7 +41,7 @@ def export_excel(mails, filename):
         ws.cell(r, 3).value = clean_excel(mail.sender)
         ws.cell(r, 4).value = clean_excel(mail.to)
         ws.cell(r, 5).value = clean_excel(mail.subject)
-        ws.cell(r, 6).value = clean_excel(mail.preview, 1000)
+        ws.cell(r, 6).value = clean_excel(mail.body)
         ws.cell(r, 7).value = clean_excel(mail.message_id)
 
         ws.cell(r, 6).alignment = Alignment(wrap_text=True, vertical="top")

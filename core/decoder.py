@@ -135,9 +135,31 @@ def clean_text(text: str) -> str:
     text = repair_iso2022jp_text(text)
     text = html_to_text(text)
 
+    # 改行コードを統一
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
+
+    # 見えない特殊スペースを普通のスペースにする
+    text = text.replace("\xa0", " ")
+    text = text.replace("\u3000", " ")
+
+    # 1行ずつ処理
+    lines = text.split("\n")
+    cleaned_lines = []
+
+    for line in lines:
+        # 行の前後の空白を削除
+        line = line.strip()
+
+        # 行の中に連続するスペースがあれば1個にする
+        line = re.sub(r"[ \t]+", " ", line)
+
+        cleaned_lines.append(line)
+
+    # いったん文章に戻す
+    text = "\n".join(cleaned_lines)
+
+    # 空行が何個あっても1個までにする
+    text = re.sub(r"\n[ \t]*\n(?:[ \t]*\n)+", "\n\n", text)
 
     return text.strip()
 
