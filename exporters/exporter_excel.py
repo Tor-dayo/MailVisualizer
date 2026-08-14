@@ -42,6 +42,13 @@ def export_excel(mails, filename):
         ws.cell(r, 4).value = clean_excel(mail.to)
         ws.cell(r, 5).value = clean_excel(mail.subject)
         ws.cell(r, 6).value = clean_excel(mail.body)
+        
+        body_text = str(mail.body)
+        line_count = body_text.count("\n") + 1
+
+        # 1行あたり約15ポイントで行高を調整 
+        ws.row_dimensions[r].height = min(max(line_count * 15, 15), 409)
+        
         ws.cell(r, 7).value = clean_excel(mail.message_id)
 
         ws.cell(r, 6).alignment = Alignment(wrap_text=True, vertical="top")
