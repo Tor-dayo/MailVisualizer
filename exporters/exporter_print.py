@@ -22,7 +22,8 @@ def export_print_html(mails, filename):
   </header>
 
   <table class="metadata">
-    <tr><th>送信日時</th><td>{_text(mail.date)}</td></tr>
+    <tr><th>原文日時</th><td>{_text(mail.date)}</td></tr>
+    <tr><th>日本時間</th><td>{_text(mail.date_jst) or "―"}</td></tr>
     <tr><th>差出人</th><td>{_text(mail.sender)}</td></tr>
     <tr><th>宛先</th><td>{_text(mail.to)}</td></tr>
     <tr><th>Message-ID</th><td class="machine-text">{_text(mail.message_id)}</td></tr>

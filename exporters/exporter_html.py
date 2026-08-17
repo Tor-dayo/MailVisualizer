@@ -15,6 +15,7 @@ def export_html(mails, filename):
         {
             "no": mail.no,
             "date": mail.date,
+            "date_jst": mail.date_jst,
             "sender": mail.sender,
             "to": mail.to,
             "subject": mail.subject,
@@ -57,7 +58,7 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;f
 <script id="mail-data" type="application/json">__MAIL_DATA__</script>
 <script>
 const mails=JSON.parse(document.getElementById("mail-data").textContent);
-const fields=[["no","管理No."],["date","送信日時"],["sender","差出人"],["to","宛先"],["subject","件名"],["body","本文"],["message_id","Message-ID"]];
+const fields=[["no","管理No."],["date","原文日時"],["date_jst","日本時間（JST）"],["sender","差出人"],["to","宛先"],["subject","件名"],["body","本文"],["message_id","Message-ID"]];
 const operators=[["contains","含む"],["not_contains","含まない"],["equals","等しい"],["starts","で始まる"],["ends","で終わる"]];
 const filters=document.getElementById("filters"),sorts=document.getElementById("sorts"),list=document.getElementById("mail-list");
 const options=items=>items.map(([v,l])=>`<option value="${v}">${l}</option>`).join("");
@@ -74,10 +75,10 @@ function addSort(field="date",direction="asc"){
 }
 const norm=value=>String(value??"").normalize("NFKC").toLocaleLowerCase("ja");
 function matches(mail,c){const v=norm(mail[c.field]),q=norm(c.query);if(!q)return true;if(c.operator==="not_contains")return !v.includes(q);if(c.operator==="equals")return v===q;if(c.operator==="starts")return v.startsWith(q);if(c.operator==="ends")return v.endsWith(q);return v.includes(q)}
-function compare(a,b,field){if(field==="no")return Number(a||0)-Number(b||0);if(field==="date"){const left=Date.parse(a),right=Date.parse(b);if(!Number.isNaN(left)&&!Number.isNaN(right))return left-right}return norm(a).localeCompare(norm(b),"ja",{numeric:true,sensitivity:"base"})}
+function compare(a,b,field){if(field==="no")return Number(a||0)-Number(b||0);if(field==="date"||field==="date_jst"){const left=Date.parse(a),right=Date.parse(b);if(!Number.isNaN(left)&&!Number.isNaN(right))return left-right}return norm(a).localeCompare(norm(b),"ja",{numeric:true,sensitivity:"base"})}
 function element(tag,text,className=""){const e=document.createElement(tag);e.textContent=text||"";if(className)e.className=className;return e}
 function render(items){list.replaceChildren();document.getElementById("result-count").textContent=`${items.length} / ${mails.length}件`;if(!items.length){list.append(element("div","条件に一致するメールはありません。","empty"));return}
- for(const mail of items){const details=document.createElement("details");details.className="mail";const summary=document.createElement("summary"),title=document.createElement("div");title.className="title";title.append(element("h3",mail.subject||`件名なし ${mail.no}`),element("span",`No. ${mail.no}`,"number"));const meta=document.createElement("div");meta.className="meta";meta.append(element("span",`From: ${mail.sender||"―"}`),element("span",`To: ${mail.to||"―"}`),element("span",mail.date||"日時なし"));summary.append(title,meta);const body=document.createElement("div");body.className="body";const dl=document.createElement("dl");[["差出人",mail.sender],["宛先",mail.to],["送信日時",mail.date],["Message-ID",mail.message_id]].forEach(([k,v])=>dl.append(element("dt",k),element("dd",v||"―")));body.append(dl,element("pre",mail.body||"本文なし"));details.append(summary,body);list.append(details)}}
+ for(const mail of items){const details=document.createElement("details");details.className="mail";const summary=document.createElement("summary"),title=document.createElement("div");title.className="title";title.append(element("h3",mail.subject||`件名なし ${mail.no}`),element("span",`No. ${mail.no}`,"number"));const meta=document.createElement("div");meta.className="meta";meta.append(element("span",`From: ${mail.sender||"―"}`),element("span",`To: ${mail.to||"―"}`),element("span",mail.date_jst||mail.date||"日時なし"));summary.append(title,meta);const body=document.createElement("div");body.className="body";const dl=document.createElement("dl");[["差出人",mail.sender],["宛先",mail.to],["原文日時",mail.date],["日本時間（JST）",mail.date_jst],["Message-ID",mail.message_id]].forEach(([k,v])=>dl.append(element("dt",k),element("dd",v||"―")));body.append(dl,element("pre",mail.body||"本文なし"));details.append(summary,body);list.append(details)}}
 function applyConditions(){const filterConditions=[...document.querySelectorAll(".filter-condition")].map(r=>({field:r.querySelector(".field").value,operator:r.querySelector(".operator").value,query:r.querySelector(".query").value}));const sortConditions=[...document.querySelectorAll(".sort-condition")].map(r=>({field:r.querySelector(".field").value,direction:r.querySelector(".direction").value}));const result=mails.filter(mail=>filterConditions.every(c=>matches(mail,c)));result.sort((a,b)=>{for(const c of sortConditions){const compared=compare(a[c.field],b[c.field],c.field);if(compared)return c.direction==="desc"?-compared:compared}return Number(a.no)-Number(b.no)});render(result)}
 document.getElementById("add-filter").onclick=()=>addFilter();document.getElementById("add-sort").onclick=()=>addSort();document.getElementById("apply").onclick=applyConditions;
 document.getElementById("reset").onclick=()=>{filters.replaceChildren();sorts.replaceChildren();addFilter();addSort();applyConditions()};addFilter();addSort();applyConditions();

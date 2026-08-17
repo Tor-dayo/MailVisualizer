@@ -19,3 +19,5 @@ class Mail:
     preview: str
 
     message_id: str
+
+    date_jst: str = ""

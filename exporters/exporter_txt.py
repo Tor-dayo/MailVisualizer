@@ -22,6 +22,7 @@ def export_txt_files(mails, output_folder):
         with open(path, "w", encoding="utf-8") as f:
             f.write(f"件名: {mail.subject}\n")
             f.write(f"日時: {mail.date}\n")
+            f.write(f"日本時間（JST）: {mail.date_jst}\n")
             f.write(f"差出人: {mail.sender}\n")
             f.write(f"宛先: {mail.to}\n")
             f.write(f"Message-ID: {mail.message_id}\n")

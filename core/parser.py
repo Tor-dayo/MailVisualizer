@@ -29,6 +29,7 @@ def parse_mail_file(file_path):
                     body=body,
                     preview=body[:300],
                     message_id=headers.get("message_id", ""),
+                    date_jst=headers.get("date_jst", ""),
                 )
             )
 
@@ -45,6 +46,7 @@ def parse_mail_file(file_path):
                     body=error_text,
                     preview=error_text,
                     message_id="",
+                    date_jst="",
                 )
             )
 
