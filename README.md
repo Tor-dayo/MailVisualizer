@@ -2,7 +2,7 @@
 
 ## 概要
 
-Mbox・EML形式のメールデータを解析し、Excel・HTML・TXTへ出力するツール。
+Mbox・EML形式のメールデータを解析し、Excel・HTML・印刷用HTML・TXTへ出力するツール。
 
 現在の対応形式
 
@@ -28,6 +28,7 @@ Mbox・EML形式のメールデータを解析し、Excel・HTML・TXTへ出力�
 - Excel出力
 - HTML出力
 - txt出力
+- A4印刷用レポート出力
 
 ---
 

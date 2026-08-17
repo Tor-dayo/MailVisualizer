@@ -3,6 +3,7 @@ import os
 from core.parser import parse_mail_file
 from exporters.exporter_excel import export_excel
 from exporters.exporter_html import export_html
+from exporters.exporter_print import export_print_html
 from exporters.exporter_txt import export_txt_files
 
 
@@ -13,6 +14,7 @@ class MailService:
         output_folder,
         excel=True,
         html=True,
+        print_report=True,
         txt=True,
     ):
         os.makedirs(output_folder, exist_ok=True)
@@ -29,6 +31,12 @@ class MailService:
             export_html(
                 mails,
                 os.path.join(output_folder, "index.html"),
+            )
+
+        if print_report:
+            export_print_html(
+                mails,
+                os.path.join(output_folder, "print_all.html"),
             )
 
         if txt:

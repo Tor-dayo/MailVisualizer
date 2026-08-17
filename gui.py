@@ -22,6 +22,7 @@ def create_main_window(root):
 
     excel_var = tk.BooleanVar(value=True)
     html_var = tk.BooleanVar(value=True)
+    print_var = tk.BooleanVar(value=True)
     txt_var = tk.BooleanVar(value=True)
 
     ttk.Label(root, text="Mail Visualizer", style="Title.TLabel").pack(pady=(28, 8))
@@ -59,6 +60,7 @@ def create_main_window(root):
 
     tk.Checkbutton(option_frame, text="Excel一覧を作る", variable=excel_var, bg="white").pack(anchor="w", pady=4)
     tk.Checkbutton(option_frame, text="HTMLビューアを作る", variable=html_var, bg="white").pack(anchor="w", pady=4)
+    tk.Checkbutton(option_frame, text="印刷用レポートを作る", variable=print_var, bg="white").pack(anchor="w", pady=4)
     tk.Checkbutton(option_frame, text="本文txtを分割保存する", variable=txt_var, bg="white").pack(anchor="w", pady=4)
 
     status = ttk.Label(root, text="準備完了")
@@ -86,6 +88,7 @@ def create_main_window(root):
                 output_folder=output_path.get(),
                 excel=excel_var.get(),
                 html=html_var.get(),
+                print_report=print_var.get(),
                 txt=txt_var.get(),
             )
 
