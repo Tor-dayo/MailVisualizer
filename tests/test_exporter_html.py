@@ -23,6 +23,18 @@ class ExportHtmlTests(unittest.TestCase):
         self.assertIn("filterConditions.every", result)
         self.assertIn("for(const c of sortConditions)", result)
 
+    def test_contains_persistent_important_mark_and_sort_field(self):
+        mail = Mail(1, "重要候補", "", "", "", "本文", "", "<important-id>")
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "index.html"
+            export_html([mail], output)
+            result = output.read_text(encoding="utf-8")
+
+        self.assertIn('["important","重要チェック"]', result)
+        self.assertIn('checkbox.type="checkbox"', result)
+        self.assertIn("localStorage.setItem", result)
+        self.assertIn('field==="important"', result)
+
     def test_embedded_data_cannot_close_script_element(self):
         subject = "</script><script>alert(1)</script>"
         mail = Mail(1, subject, "", "", "", "<b>body</b>", "", "")
