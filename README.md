@@ -2,15 +2,19 @@
 
 ## 概要
 
-メールデータを解析し、Excel・HTML・TXTへ出力するツール
+Mbox・EML形式のメールデータを解析し、Excel・HTML・TXTへ出力するツール。
+
+現在の対応形式
+
+- mbox
+- eml
+- メール形式のtxt
 
 将来的には
 
 - Becky!
 - Outlook
 - Thunderbird
-- eml
-- mbox
 
 へ対応予定。
 

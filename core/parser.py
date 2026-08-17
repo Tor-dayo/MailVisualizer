@@ -1,15 +1,14 @@
 from email import policy
 from email.parser import BytesParser
 
-from core.loader import load_raw_file, split_mbox_messages
+from core.loader import load_mail_messages
 from core.models import Mail
 from core.header_parser import parse_headers
 from core.body_parser import extract_body
 
 
 def parse_mail_file(file_path):
-    raw = load_raw_file(file_path)
-    raw_messages = split_mbox_messages(raw)
+    raw_messages = load_mail_messages(file_path)
 
     mails = []
 

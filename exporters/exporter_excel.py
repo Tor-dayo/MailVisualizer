@@ -12,6 +12,10 @@ def clean_excel(value, limit=32000):
     value = ILLEGAL_CHARACTERS_RE.sub("", value)
     value = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", value)
 
+    # メール由来の文字列をExcelが数式として実行しないようにする。
+    if value.startswith(("=", "+", "-", "@")):
+        value = "'" + value
+
     return value[:limit]
 
 
