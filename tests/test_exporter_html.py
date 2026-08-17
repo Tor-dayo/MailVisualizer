@@ -35,6 +35,20 @@ class ExportHtmlTests(unittest.TestCase):
         self.assertIn("localStorage.setItem", result)
         self.assertIn('field==="important"', result)
 
+    def test_contains_bulk_mark_controls_for_visible_results(self):
+        mail = Mail(1, "一括対象", "", "", "", "本文", "", "<bulk-id>")
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "index.html"
+            export_html([mail], output)
+            result = output.read_text(encoding="utf-8")
+
+        self.assertIn('id="mark-visible"', result)
+        self.assertIn('id="unmark-visible"', result)
+        self.assertIn("for(const mail of visibleMails)", result)
+        self.assertIn("setVisibleMarks(true)", result)
+        self.assertIn("setVisibleMarks(false)", result)
+        self.assertIn("confirm(`表示中の${visibleMails.length}件", result)
+
     def test_embedded_data_cannot_close_script_element(self):
         subject = "</script><script>alert(1)</script>"
         mail = Mail(1, subject, "", "", "", "<b>body</b>", "", "")
