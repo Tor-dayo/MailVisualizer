@@ -49,6 +49,25 @@ class LoadMailMessagesTests(unittest.TestCase):
 
         self.assertEqual([content], load_mail_messages(path))
 
+    def test_mbox_accepts_more_than_one_hundred_header_lines(self):
+        long_headers = b"".join(
+            f"X-Provider-Trace-{index}: value\n".encode("ascii")
+            for index in range(150)
+        )
+        content = (
+            b"From alice@example.com Sat Jan  1 00:00:00 2022\n"
+            + long_headers
+            + b"Subject: First\nFrom: alice@example.com\n\nBody one\n"
+            + b"From bob@example.com Sun Jan  2 00:00:00 2022\n"
+            + long_headers
+            + b"Subject: Second\nFrom: bob@example.com\n\nBody two\n"
+        )
+        path = self.write_temp(".mbox", content)
+
+        messages = load_mail_messages(path)
+
+        self.assertEqual(2, len(messages))
+
 
 if __name__ == "__main__":
     unittest.main()

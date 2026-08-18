@@ -30,7 +30,7 @@ COLORS = {
 
 
 def create_main_window(root):
-    root.title("Mail Visualizer v0.3.1")
+    root.title("Mail Visualizer v0.3.2")
     root.geometry("1000x720")
     root.minsize(860, 650)
     root.configure(bg=COLORS["background"])
@@ -103,7 +103,7 @@ def create_main_window(root):
     titles.pack(side="left")
     tk.Label(titles, text="Mail Visualizer", bg=COLORS["navy"], fg="white", font=("Yu Gothic UI", 22, "bold")).pack(anchor="w")
     tk.Label(titles, text="Mbox・EML 精査／可視化ツール", bg=COLORS["navy"], fg="#BFD0DF", font=("Yu Gothic UI", 9)).pack(anchor="w")
-    tk.Label(header_inner, text="VERSION 0.3.1", bg=COLORS["navy_light"], fg="#DCE8F2", font=("Yu Gothic UI", 8, "bold"), padx=10, pady=5).pack(side="right", anchor="n")
+    tk.Label(header_inner, text="VERSION 0.3.2", bg=COLORS["navy_light"], fg="#DCE8F2", font=("Yu Gothic UI", 8, "bold"), padx=10, pady=5).pack(side="right", anchor="n")
 
     content = tk.Frame(root, bg=COLORS["background"])
     content.pack(fill="both", expand=True, padx=38, pady=24)

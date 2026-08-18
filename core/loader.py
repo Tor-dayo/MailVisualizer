@@ -32,7 +32,9 @@ def _is_message_separator(lines: list[bytes], index: int) -> bool:
 
     found_common_header = False
 
-    for line in lines[index + 1 : index + 101]:
+    # Yahoo/RocketMail等ではReceivedや独自X-ヘッダが100行を超えることがある。
+    # 本文のFrom行を誤認しないようヘッダ構造は検証しつつ、長いヘッダも許容する。
+    for line in lines[index + 1 : index + 10001]:
         stripped = line.rstrip(b"\r\n")
 
         if not stripped:
